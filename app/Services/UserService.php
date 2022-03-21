@@ -30,12 +30,40 @@ class UserService
     public function loginUser(array $data)
     {
         // dd($data['username']);
-        if (Auth::attempt(['username' => $data['username'], 'password' => $data['password']]))
+        if (Auth::attempt(['email' => $data['email'], 'password' => $data['password']]))
         {
             $user = Auth::user();
             return $user;
         }
 
         return false;
+    }
+
+    public function checkUserIsActivated($email)
+    {
+        $checkIfUserEmailExists = $this->userRepositoryContract->checkIfUserEmailExists($email);
+
+        if ($checkIfUserEmailExists && $checkIfUserEmailExists->email_verified_at)
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    public function checkEmail($email)
+    {
+        $checkIfUserEmailExists = $this->userRepositoryContract->checkIfUserEmailExists($email);
+
+        if ($checkIfUserEmailExists){
+            return true;
+        }
+
+        return false;
+    }
+
+    public function getUserByEmail($email)
+    {
+        return $this->userRepositoryContract->getUserByEmail($email);
     }
 }

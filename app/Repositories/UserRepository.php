@@ -30,7 +30,23 @@ class UserRepository implements UserRepositoryContract
 
             return $user;
         }catch (\Exception $e) {
-            dd($e->getMessage());
+            return $e->getMessage();
         }
+    }
+
+    public function checkIfUserEmailExists($email)
+    {
+        try {
+            $user = User::where(['email' => $email])->first();
+
+            return $user;
+        }catch (\Exception $e) {
+            return $e->getMessage();
+        }
+    }
+
+    public function getUserByEmail($email)
+    {
+        return User::where(['email' => $email])->first();
     }
 }

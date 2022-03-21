@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\Request;
 use App\Helpers\ResponseHelper;
 use App\Services\UserService;
+use App\Services\PasswordResetService;
 use App\Services\UserActivationTokenService;
 use App\Mail\RegisterUserMail;
+use App\Mail\ForgotPasswordMail;
 use App\Http\Requests\RegisterUserRequest;
 use App\Http\Requests\LoginUserRequest;
 use Illuminate\Support\Facades\Auth;
@@ -17,12 +20,14 @@ class AuthController extends Controller
     protected $userService;
     protected $responseHelper;
     protected $userActivationTokenService;
+    protected $passwordResetService;
 
-    public function __construct(UserService $userService, ResponseHelper $responseHelper, UserActivationTokenService $userActivationTokenService)
+    public function __construct(UserService $userService, ResponseHelper $responseHelper, UserActivationTokenService $userActivationTokenService, PasswordResetService $passwordResetService)
     {
         $this->userService = $userService;
         $this->responseHelper = $responseHelper;
         $this->userActivationTokenService = $userActivationTokenService;
+        $this->passwordResetService = $passwordResetService;
     }
 
     public function register(RegisterUserRequest $request)
@@ -42,6 +47,12 @@ class AuthController extends Controller
 
     public function login(LoginUserRequest $request)
     {
+        $checkActivated = $this->userService->checkUserIsActivated($request->email);
+
+        if (!$checkActivated){
+            return $this->responseHelper->errorResponse(false, 'User Needs To Activate Account!', 401);
+        }
+
         $newUser = $this->userService->loginUser($request->all());
 
         if ($newUser) {
@@ -70,5 +81,42 @@ class AuthController extends Controller
         $checkToken = $this->userActivationTokenService->checkToken($code);
 
         return $this->responseHelper->successResponse(true, 'Activate Email', $checkToken);
+    }
+
+    public function forgotPasswordCreate(Request $request)
+    {
+        $checkUserEmail = $this->userService->checkEmail($request->email);
+
+        if (!$checkUserEmail) {
+            return $this->responseHelper->errorResponse(false, 'User Email doesnt Exist', 401);
+        }
+
+        $passwordResetData = $this->passwordResetService->createPasswordReset($request->email);
+        Mail::to($request->email)->send(new ForgotPasswordMail($passwordResetData));
+
+        return $this->responseHelper->successResponse(true, 'Password Reset Email Sent', $passwordResetData);
+    }
+
+    public function forgotPasswordToken(Request $request, $token)
+    {
+        $checkToken = $this->passwordResetService->checkReset($request->email, $token);
+        
+        if (!$checkToken) {
+            return $this->responseHelper->errorResponse(false, 'Details did not match!', 400);
+        }
+
+        $user = $this->userService->getUserByEmail($request->email);
+        
+        if (!$user) {
+            return $this->responseHelper->errorResponse(false, 'User not found!', 401);
+        }
+        //put it in service
+        $user->password = bcrypt($request->password);
+        $user->save();
+
+        //put it in service
+        $checkToken->delete();        
+
+        return $this->responseHelper->successResponse(true, 'Password Reset Successful', $user);
     }
 }
