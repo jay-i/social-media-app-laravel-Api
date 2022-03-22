@@ -50,4 +50,28 @@ class User extends Authenticatable
     {
         return $this->hasMany(StatusUpdate::class);
     }
+
+    public function images()
+    {
+        return $this->hasMany(UserFile::class);
+    }
+
+    public function friends()
+    {
+        return $this->belongsToMany(User::class, 'friend_user', 'user_id', 'friend_id');
+    }
+
+    public function toArray()
+    {
+        return [
+            'id' => $this->id,
+            'username' => $this->username,
+            'email' => $this->email,
+            'gender' => $this->gender,
+            'phone_no' => $this->phone_no,
+            'address' => $this->address,
+            // 'images' => $this->images,
+            // 'friends' => $this->friends
+        ];
+    }
 }
