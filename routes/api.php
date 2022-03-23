@@ -38,7 +38,7 @@ Route::group(['middleware' => 'auth:api', 'prefix' => 'user'], function() {
     Route::get('me', [UserController::class, 'me']);
     Route::post('status/new', [StatusUpdatesController::class, 'store']);
     Route::post('image-upload', [UserImageController::class, 'store']);
-    Route::get('addFriend/{id}', [UserController::class, 'toggleFriend']);
+    Route::get('toggleFriend/{id}', [UserController::class, 'toggleFriend']);
     Route::get('getFriends', [UserController::class, 'getFriends']);
 });
  
